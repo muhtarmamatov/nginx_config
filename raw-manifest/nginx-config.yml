@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: dev
+data:
+  nginx.conf: |
+    # Defines user and group under which the server will run.
+    user nginx;
+
+    # Sets the number of worker processes. Auto means to auto-detect based on available CPU cores.
+    worker_processes auto;
+
+    # error_log path and log level.
+    error_log /var/log/nginx/error.log warn;
+
+    # Specifies the value for maximum file descriptors that can be opened by this process.
+    pid /var/run/nginx.pid;
+
+    events {
+        # Sets the maximum number of simultaneous connections that can be opened by a worker process.
+        worker_connections 1024;
+    }
+
+    http {
+        # Includes the file mime types, which maps file name extensions to MIME types of responses.
+        include       /etc/nginx/mime.types;
+        # Default file type to serve.
+        default_type  application/octet-stream;
+
+        # Configuration file for log format.
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        # Access log with buffer settings.
+        access_log  /var/log/nginx/access.log  main;
+
+        # Sendfile directive. Enables or disables the use of sendfile().
+        sendfile        on;
+        # Tcp_nopush directive. Sends response in one piece.
+        tcp_nopush      on;
+        # Tcp_nodelay directive. Controls the Nagle buffering algorithm.
+        tcp_nodelay     on;
+
+        # Keepalive timeout.
+        keepalive_timeout  65;
+
+        # Gzip Settings
+        gzip  on;
+        gzip_disable "msie6";
+
+        # Virtual Host Configs
+        #include /etc/nginx/conf.d/*.conf;
+
+        server {
+            listen       80;
+            server_name  localhost;
+
+            # Charset setting
+            charset utf-8;
+
+            # Access and error logs for the server.
+            access_log  /var/log/nginx/host.access.log  main;
+            error_log  /var/log/nginx/host.error.log  error;
+
+            # Root directory and index files.
+            root   /usr/share/nginx/html;
+            index  index.html index.htm;
+
+            # Error pages
+            error_page  404              /404.html;
+            error_page  500 502 503 504  /50x.html;
+
+            # Proxy settings can be added here.
+
+            # Location blocks can specify particular directives based on the request URI.
+            location / {
+                # Default handling for the root url.
+                try_files $uri $uri/ =404;
+            }
+            location /nginx_status {
+                stub_status on;
+                access_log off;
+                allow all;
+            }
+        }
+    }
